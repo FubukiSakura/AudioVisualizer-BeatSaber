@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "Z:\\BeatSaberサブフォルダ\\Mod\\AudioVisualizer\\AudioVisualizer.csproj": {}
+    "C:\\Users\\Sakura\\Documents\\GitHub\\AudioVisualizer-BeatSaber\\AudioVisualizer.csproj": {}
   },
   "projects": {
-    "Z:\\BeatSaberサブフォルダ\\Mod\\AudioVisualizer\\AudioVisualizer.csproj": {
+    "C:\\Users\\Sakura\\Documents\\GitHub\\AudioVisualizer-BeatSaber\\AudioVisualizer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "Z:\\BeatSaberサブフォルダ\\Mod\\AudioVisualizer\\AudioVisualizer.csproj",
+        "projectUniqueName": "C:\\Users\\Sakura\\Documents\\GitHub\\AudioVisualizer-BeatSaber\\AudioVisualizer.csproj",
         "projectName": "AudioVisualizer",
-        "projectPath": "Z:\\BeatSaberサブフォルダ\\Mod\\AudioVisualizer\\AudioVisualizer.csproj",
+        "projectPath": "C:\\Users\\Sakura\\Documents\\GitHub\\AudioVisualizer-BeatSaber\\AudioVisualizer.csproj",
         "packagesPath": "C:\\Users\\Sakura\\.nuget\\packages\\",
-        "outputPath": "Z:\\BeatSaberサブフォルダ\\Mod\\AudioVisualizer\\obj\\",
+        "outputPath": "C:\\Users\\Sakura\\Documents\\GitHub\\AudioVisualizer-BeatSaber\\obj\\",
         "projectStyle": "PackageReference",
         "skipContentFileWrite": true,
         "configFilePaths": [

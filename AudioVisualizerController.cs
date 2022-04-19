@@ -31,9 +31,6 @@ namespace AudioVisualizer
         public float SpectrumShif = 0.0f;
         GameObject AVParent = new GameObject("AudioVisualizerParent");
 
-        private SaberModelController leftSaberModel;
-        private SaberModelController rightSaberModel;
-        private SaberManager saberManager;
 
         private void Awake()
         {
@@ -51,9 +48,6 @@ namespace AudioVisualizer
         }
 
 
-
-
-
         private void Start()
         {
             audiospectrum = new GameObject("audiospectrum");
@@ -66,8 +60,8 @@ namespace AudioVisualizer
             AudioVisualizerParent01 = new GameObject("AudioVisualizerParent01");
             AudioVisualizerParent01.transform.SetParent(transform);
 
-            GameObject BasePrefub_Capsule = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Renderer renderer = BasePrefub_Capsule.GetComponent<Renderer>();
+            GameObject BasePrefub_Cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Renderer renderer = BasePrefub_Cube.GetComponent<Renderer>();
             renderer.material = new Material(Shader.Find("Custom/GlowingInstancedHD"));
             renderer.sharedMaterial.DisableKeyword("_EMISSION");
 
@@ -78,27 +72,23 @@ namespace AudioVisualizer
             for (int i = 0; i < SpectrumSize; i++)
             {
 
-                GameObject obj = Instantiate(BasePrefub_Capsule, Vector3.zero, Quaternion.identity);
+                GameObject obj = Instantiate(BasePrefub_Cube, Vector3.zero, Quaternion.identity);
 
                 GameObject cubeParent = new GameObject("cubeParent");
 
                 //　虹色生成
                 float H = (float)i / (float)SpectrumSize;
                 Color color = UnityEngine.Color.HSVToRGB(H, 1.0f, 1.0f);
-                //float intensity = (color.r + color.g + color.b) / 2.0f;
-                //float factor = 2.0f / intensity;
-                //color = new Color(color.r * factor, color.g * factor, color.b * factor);
                 obj.GetComponent<MeshRenderer>().material.SetColor("_Color", color);
 
+                //　生成したキューブを子にして、キューブの中心点をずらす
                 cubeParent.transform.SetParent(transform);
                 obj.transform.SetParent(cubeParent.transform);
-
-                //float f = 0.5f * (float)i;
-                //cubeParent.transform.localPosition = new Vector3(f - 1.5f, 1, 1);
-
                 obj.transform.localPosition = new Vector3(0, 0.1f, 0);
+                //　キューブを細長くする
                 obj.transform.localScale = new Vector3(0.1f, 0.4f, 0.1f);
 
+                //　円形に配置
                 var point = ((float)i / SpectrumSize) * oneCycle; // 周期の位置 (1.0 = 100% の時 2π となる)
                 var repeatPoint = point * 1.0f; // 繰り返し位置
                 var x = Mathf.Cos(repeatPoint) * radius;
@@ -112,6 +102,7 @@ namespace AudioVisualizer
 
             }
 
+            //　すべてのキューブの親（AVParent）の子にする。
             AVParent.transform.SetParent(transform);
 
             for (int i = 0; i < cubes.Count; i++)
@@ -119,24 +110,13 @@ namespace AudioVisualizer
                 cubes[i].transform.SetParent(AVParent.transform);
             }
 
-            leftSaberModel = saberManager.leftSaber.GetComponentInChildren<SaberModelController>(true);
-            rightSaberModel = saberManager.rightSaber.GetComponentInChildren<SaberModelController>(true);
-
-            //SetSaberGlowColor[] glowColors = GetValue<SetSaberGlowColor[]>(leftSaberModel, "_setSaberGlowColors");
-
-            //Color trailTintColor = GetValue<SaberModelController.InitData>(leftSaberModel, "_initData").trailTintColor;
-            //SaberTrail trail = GetValue<SaberTrail>(leftSaberModel, "_saberTrail");
-            //SetValue<Color>(trail, "_color", (Color.HSVToRGB(0.5f, 1.0f, 1.0f) * trailTintColor).linear);
-
-
-            //foreach (SetSaberGlowColor glowColor in glowColors)
-            //    glowColor.SetColors();
         }
 
 
         private void Update()
         {
-
+            
+            //　オーディオビジュアライザーを動かす
             for (int i = 0; i < cubes.Count; i++)
             {
                 var cube = cubes[i];
@@ -151,6 +131,8 @@ namespace AudioVisualizer
             }
 
             //　オーディオビジュアライザー全体を動かす
+            //　9番目（PeakLevels[8]）のスペクトラムを使う
+            //　PeakLevels[8]はBASS付近の音。
             var AVP_Scale = AVParent.transform.localScale;
             var AVP_Angle = AVParent.transform.localEulerAngles;
             float AVP_Value = audiospectrum.GetComponent<AudioSpectrum>().PeakLevels[8] * scale;
