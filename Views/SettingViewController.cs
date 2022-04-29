@@ -67,6 +67,7 @@ namespace AudioVisualizer.Views
 
         public void Setup()
         {
+            GameplaySetup.instance?.RemoveTab(s_tabName);
             GameplaySetup.instance?.AddTab(s_tabName, s_resourceName, this);
         }
 
