@@ -8,8 +8,8 @@ namespace AudioVisualizer.Configuration
     internal class PluginConfig
     {
         public static PluginConfig Instance { get; set; }
-        public virtual bool ShowMenu { get; set; }
-        public virtual bool ShowGame { get; set; }
+        public virtual bool ShowMenu { get; set; } = true;
+        public virtual bool ShowGame { get; set; } = true;
 
         public event Action OnConfigChanged;
 
