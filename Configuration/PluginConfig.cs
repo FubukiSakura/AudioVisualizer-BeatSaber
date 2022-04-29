@@ -1,4 +1,4 @@
-﻿/*
+﻿using System;
 using System.Runtime.CompilerServices;
 using IPA.Config.Stores;
 
@@ -8,7 +8,10 @@ namespace AudioVisualizer.Configuration
     internal class PluginConfig
     {
         public static PluginConfig Instance { get; set; }
-        public virtual int IntValue { get; set; } = 42; // Must be 'virtual' if you want BSIPA to detect a value change and save the config automatically.
+        public virtual bool ShowMenu { get; set; }
+        public virtual bool ShowGame { get; set; }
+
+        public event Action OnConfigChanged;
 
         /// <summary>
         /// This is called whenever BSIPA reads the config from disk (including when file changes are detected).
@@ -24,6 +27,7 @@ namespace AudioVisualizer.Configuration
         public virtual void Changed()
         {
             // Do stuff when the config is changed.
+            this.OnConfigChanged?.Invoke();
         }
 
         /// <summary>
@@ -35,4 +39,3 @@ namespace AudioVisualizer.Configuration
         }
     }
 }
-*/

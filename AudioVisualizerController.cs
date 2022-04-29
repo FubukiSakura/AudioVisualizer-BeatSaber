@@ -1,4 +1,7 @@
-﻿using IPA.Utilities;
+﻿using AudioVisualizer.Configuration;
+using AudioVisualizer.Views;
+using BeatSaberMarkupLanguage;
+using IPA.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -31,7 +34,7 @@ namespace AudioVisualizer
         public float SpectrumShif = 0.0f;
         GameObject AVParent = new GameObject("AudioVisualizerParent");
 
-
+        #region // Unity message
         private void Awake()
         {
             // For this particular MonoBehaviour, we only want one instance to exist at any time, so store a reference to it in a static property
@@ -45,8 +48,10 @@ namespace AudioVisualizer
             GameObject.DontDestroyOnLoad(this); // Don't destroy this object on scene changes
             Instance = this;
             Plugin.Log?.Debug($"{name}: Awake()");
+            PluginConfig.Instance.OnConfigChanged += this.OnConfigChanged;
+            SceneManager.activeSceneChanged += this.OnActiveSceneChanged;
+            SettingViewController.instance.Setup();
         }
-
 
         private void Start()
         {
@@ -67,7 +72,7 @@ namespace AudioVisualizer
 
             audiospectrum.transform.SetParent(transform);
 
-            var oneCycle = 2.0f * Mathf.PI;            
+            var oneCycle = 2.0f * Mathf.PI;
 
             for (int i = 0; i < SpectrumSize; i++)
             {
@@ -115,7 +120,7 @@ namespace AudioVisualizer
 
         private void Update()
         {
-            
+
             //　オーディオビジュアライザーを動かす
             for (int i = 0; i < cubes.Count; i++)
             {
@@ -155,65 +160,45 @@ namespace AudioVisualizer
             SpectrumShif = SpectrumShif + AVP_Value * 0.1f;
             if(SpectrumShif >= 360.0f / SpectrumSize)
             {
-                SpectrumShif = SpectrumShif -360.0f / SpectrumSize;
-                cubes.Insert(0,cubes[cubes.Count - 1]);
+                SpectrumShif = SpectrumShif - 360.0f / SpectrumSize;
+                cubes.Insert(0, cubes[cubes.Count - 1]);
                 cubes.RemoveAt(cubes.Count - 1);
             }
 
         }
-
-
-        private void LateUpdate()
-        {
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-        /// <summary>
-        /// Called when the script becomes enabled and active
-        /// </summary>
-        private void OnEnable()
-        {
-
-        }
-
-        /// <summary>
-        /// Called when the script becomes disabled or when it is being destroyed.
-        /// </summary>
-        private void OnDisable()
-        {
-
-        }
-
         /// <summary>
         /// Called when the script is being destroyed.
         /// </summary>
         private void OnDestroy()
         {
             Plugin.Log?.Debug($"{name}: OnDestroy()");
+            PluginConfig.Instance.OnConfigChanged -= OnConfigChanged;
+            SceneManager.activeSceneChanged += this.OnActiveSceneChanged;
             if (Instance == this)
                 Instance = null; // This MonoBehaviour is being destroyed, so set the static instance property to null.
 
         }
+        #endregion
 
+        private void OnConfigChanged()
+        {
+            if (SceneManager.GetActiveScene().name == "GameCore") {
+                this.AVParent.SetActive(PluginConfig.Instance.ShowGame);
+            }
+            else {
+                this.AVParent.SetActive(PluginConfig.Instance.ShowMenu);
+            }
+        }
 
-
-
-
-
-
-
-
-
+        private void OnActiveSceneChanged(Scene arg0, Scene arg1)
+        {
+            if (arg1.name == "GameCore") {
+                this.AVParent.SetActive(PluginConfig.Instance.ShowGame);
+            }
+            else {
+                this.AVParent.SetActive(PluginConfig.Instance.ShowMenu);
+            }
+        }
 
         public static T GetValue<T>(object obj, string name)
         {
@@ -241,7 +226,5 @@ namespace AudioVisualizer
             field.SetValue(obj, value);
 
         }
-
-
     }
 }
