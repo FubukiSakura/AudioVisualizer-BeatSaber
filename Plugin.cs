@@ -1,12 +1,9 @@
 ﻿using IPA;
 using IPA.Config;
 using IPA.Config.Stores;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+using AudioVisualizer.Installers;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using SiraUtil.Zenject;
 using IPALogger = IPA.Logging.Logger;
 
 namespace AudioVisualizer
@@ -23,28 +20,21 @@ namespace AudioVisualizer
         /// [Init] methods that use a Constructor or called before regular methods like InitWithConfig.
         /// Only use [Init] with one Constructor.
         /// </summary>
-        public void Init(IPALogger logger, Config conf)
+        public void Init(IPALogger logger, Config conf, Zenjector zenjector)
         {
             Instance = this;
             Log = logger;
             Log.Info("AudioVisualizer initialized.");
             Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
             Log.Debug("Config loaded");
+            zenjector.Install<AudioVisualizerGameInstaller>(Location.Player);
+            zenjector.Install<AudioVisualizerMenuInstaller>(Location.Menu);
         }
 
         [OnStart]
-        public void OnApplicationStart()
-        {
-            Log.Debug("OnApplicationStart");
-            new GameObject("AudioVisualizerController").AddComponent<AudioVisualizerController>();
-
-        }
-
+        public void OnApplicationStart() => Log.Debug("OnApplicationStart");
+        
         [OnExit]
-        public void OnApplicationQuit()
-        {
-            Log.Debug("OnApplicationQuit");
-
-        }
+        public void OnApplicationQuit() => Log.Debug("OnApplicationQuit");
     }
 }

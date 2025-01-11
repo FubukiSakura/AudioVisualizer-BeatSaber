@@ -3,6 +3,8 @@
 // https://github.com/keijiro/unity-audio-spectrum
 using UnityEngine;
 using System.Collections;
+using System;
+using System.Linq;
 
 public class AudioSpectrum : MonoBehaviour
 {
@@ -37,11 +39,19 @@ public class AudioSpectrum : MonoBehaviour
     };
     #endregion
 
+    #region Public method
+    public static BandType ConvertToBandtype(string bandTypeName)
+    {
+        return Enum.GetValues(typeof(AudioSpectrum.BandType)).OfType<AudioSpectrum.BandType>().FirstOrDefault(x => string.Equals(x.ToString(), bandTypeName, StringComparison.CurrentCultureIgnoreCase));
+    }
+    #endregion
+
     #region Public variables
     public int numberOfSamples = 1024;
     public BandType bandType = BandType.TenBand;
     public float fallSpeed = 0.08f;
     public float sensibility = 8.0f;
+    public event Action<AudioSpectrum> UpdatedRawSpectrums;
     #endregion
 
     #region Private variables
@@ -63,9 +73,29 @@ public class AudioSpectrum : MonoBehaviour
     public float[] MeanLevels {
         get { return meanLevels; }
     }
+    public BandType Band
+    {
+        get => this.bandType;
+
+        set => this.SetBandType(ref this.bandType, value);
+    }
     #endregion
 
     #region Private functions
+    private bool SetBandType(ref BandType bt, BandType value)
+    {
+        if (bt == value) {
+            return false;
+        }
+        bt = value;
+        var bandCount = middleFrequenciesForBands[(int)bt].Length;
+        if (this.levels.Length != bandCount) {
+            this.levels = new float[bandCount];
+            this.peakLevels = new float[bandCount];
+            this.meanLevels = new float[bandCount];
+        }
+        return true;
+    }
     void CheckBuffers ()
     {
         if (rawSpectrum == null || rawSpectrum.Length != numberOfSamples) {
@@ -117,6 +147,8 @@ public class AudioSpectrum : MonoBehaviour
             peakLevels [bi] = Mathf.Max (peakLevels [bi] - falldown, bandMax);
             meanLevels [bi] = bandMax - (bandMax - meanLevels [bi]) * filter;
         }
+
+        this.UpdatedRawSpectrums?.Invoke(this);
     }
     #endregion
 }

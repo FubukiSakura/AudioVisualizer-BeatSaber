@@ -1,27 +1,18 @@
 ﻿using AudioVisualizer.Configuration;
-using AudioVisualizer.Views;
-using BeatSaberMarkupLanguage;
-using IPA.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Zenject;
 
 using static AudioSpectrum;
 
 namespace AudioVisualizer
 {
-    public class AudioVisualizerController : MonoBehaviour
+    public class AudioVisualizerController : IInitializable, IDisposable
     {
-        public static AudioVisualizerController Instance { get; private set; }
-
         public List<GameObject> cubes = new List<GameObject>();
         public GameObject AudioVisualizerParent01;
         public GameObject audiospectrum;
@@ -32,62 +23,89 @@ namespace AudioVisualizer
         public BandType type = BandType.ThirtyEXOneBand;
         public float radius = 2.0f;
         public float SpectrumShif = 0.0f;
-        GameObject AVParent = new GameObject("AudioVisualizerParent");
+        private GameObject AVParent;
+        public GameObject BasePrefub_Cube;
 
-        #region // Unity message
-        private void Awake()
+        public void Initialize()
         {
             // For this particular MonoBehaviour, we only want one instance to exist at any time, so store a reference to it in a static property
             //   and destroy any that are created while one already exists.
-            if (Instance != null)
-            {
-                Plugin.Log?.Warn($"Instance of {GetType().Name} already exists, destroying.");
-                GameObject.DestroyImmediate(this);
-                return;
-            }
-            GameObject.DontDestroyOnLoad(this); // Don't destroy this object on scene changes
-            Instance = this;
-            Plugin.Log?.Debug($"{name}: Awake()");
+
+            this.AVParent = new GameObject("AudioVisualizerParent");
+            this.VisualizerSetup();
+
             PluginConfig.Instance.OnConfigChanged += this.OnConfigChanged;
             SceneManager.activeSceneChanged += this.OnActiveSceneChanged;
-            SettingViewController.instance.Setup();
+            _audiospectrum.UpdatedRawSpectrums += this.OnUpdatedRawSpectrums;
         }
 
-        private void Start()
+        private bool _disposedValue;
+        private AudioSpectrum _audiospectrum;
+        private DiContainer _container;
+
+        [Inject]
+        public void Construct([Inject(Id = AudioSpectrum.BandType.ThirtyOneBand)] AudioSpectrum audioSpectrum, DiContainer diContainer)
+        {
+            this._audiospectrum = audioSpectrum;
+            this._container = diContainer;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this._disposedValue)
+            {
+                if (disposing)
+                {
+                    PluginConfig.Instance.OnConfigChanged -= this.OnConfigChanged;
+                    SceneManager.activeSceneChanged -= this.OnActiveSceneChanged;
+                    _audiospectrum.UpdatedRawSpectrums -= this.OnUpdatedRawSpectrums;
+                }
+                this._disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void VisualizerSetup()
         {
             audiospectrum = new GameObject("audiospectrum");
-            audiospectrum.AddComponent<AudioSpectrum>();
 
-            audiospectrum.GetComponent<AudioSpectrum>().bandType = type;
-            audiospectrum.GetComponent<AudioSpectrum>().fallSpeed = fallSpeed;
-            audiospectrum.GetComponent<AudioSpectrum>().sensibility = sensibility;
+            _audiospectrum.bandType = type;
+            _audiospectrum.fallSpeed = fallSpeed;
+            _audiospectrum.sensibility = sensibility;
 
             AudioVisualizerParent01 = new GameObject("AudioVisualizerParent01");
-            AudioVisualizerParent01.transform.SetParent(transform);
+            AudioVisualizerParent01.transform.SetParent(AVParent.transform);
 
-            GameObject BasePrefub_Cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Renderer renderer = BasePrefub_Cube.GetComponent<Renderer>();
-            renderer.material = new Material(Shader.Find("Custom/GlowingInstancedHD"));
-            renderer.sharedMaterial.DisableKeyword("_EMISSION");
+            //GameObject BasePrefub_Cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Shader _shader = GetShader("Custom/Glowing");
+            Shader _shaderStandard = GetShader("Standard");
 
-            audiospectrum.transform.SetParent(transform);
+
+            audiospectrum.transform.SetParent(AVParent.transform);
 
             var oneCycle = 2.0f * Mathf.PI;
 
             for (int i = 0; i < SpectrumSize; i++)
             {
-
-                GameObject obj = Instantiate(BasePrefub_Cube, Vector3.zero, Quaternion.identity);
+                //GameObject obj = _container.InstantiatePrefab(BasePrefub_Cube, Vector3.zero, Quaternion.identity, AVParent.transform);
+                GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
                 GameObject cubeParent = new GameObject("cubeParent");
 
                 //　虹色生成
                 float H = (float)i / (float)SpectrumSize;
-                Color color = UnityEngine.Color.HSVToRGB(H, 1.0f, 1.0f);
-                obj.GetComponent<MeshRenderer>().material.SetColor("_Color", color);
+                Color color = Color.HSVToRGB(H, 1.0f, 1.0f);
+                MeshRenderer renderer2 = obj.GetComponent<MeshRenderer>();
+                renderer2.material = new Material(_shader);
+                renderer2.material.SetColor("_Color", color);
 
                 //　生成したキューブを子にして、キューブの中心点をずらす
-                cubeParent.transform.SetParent(transform);
+                cubeParent.transform.SetParent(AVParent.transform);
                 obj.transform.SetParent(cubeParent.transform);
                 obj.transform.localPosition = new Vector3(0, 0.1f, 0);
                 //　キューブを細長くする
@@ -108,7 +126,7 @@ namespace AudioVisualizer
             }
 
             //　すべてのキューブの親（AVParent）の子にする。
-            AVParent.transform.SetParent(transform);
+            AVParent.transform.SetParent(AVParent.transform);
 
             for (int i = 0; i < cubes.Count; i++)
             {
@@ -117,8 +135,14 @@ namespace AudioVisualizer
 
         }
 
+        private void OnUpdatedRawSpectrums(AudioSpectrum obj)
+        {
 
-        private void Update()
+           this.UpdateAudioSpectrums(obj);
+        }
+
+
+        private void UpdateAudioSpectrums(AudioSpectrum audio)
         {
 
             //　オーディオビジュアライザーを動かす
@@ -127,7 +151,7 @@ namespace AudioVisualizer
                 var cube = cubes[i];
                 var localScale = cube.transform.localScale;
                 //float value = audiospectrum.GetComponent<AudioSpectrum>().MeanLevels[i] * scale;
-                float value = audiospectrum.GetComponent<AudioSpectrum>().PeakLevels[i] * scale;
+                float value = audio.PeakLevels[i] * scale;
                 //float value = audiospectrum.GetComponent<AudioSpectrum>().Levels[i] * scale;
 
                 localScale.y = value + 0.1f;
@@ -140,7 +164,7 @@ namespace AudioVisualizer
             //　PeakLevels[8]はBASS付近の音。
             var AVP_Scale = AVParent.transform.localScale;
             var AVP_Angle = AVParent.transform.localEulerAngles;
-            float AVP_Value = audiospectrum.GetComponent<AudioSpectrum>().PeakLevels[8] * scale;
+            float AVP_Value = audio.PeakLevels[8] * scale;
 
             //　サイズ
             AVP_Scale.x = 1.0f + AVP_Value * 0.1f;
@@ -166,19 +190,13 @@ namespace AudioVisualizer
             }
 
         }
-        /// <summary>
-        /// Called when the script is being destroyed.
-        /// </summary>
-        private void OnDestroy()
-        {
-            Plugin.Log?.Debug($"{name}: OnDestroy()");
-            PluginConfig.Instance.OnConfigChanged -= OnConfigChanged;
-            SceneManager.activeSceneChanged += this.OnActiveSceneChanged;
-            if (Instance == this)
-                Instance = null; // This MonoBehaviour is being destroyed, so set the static instance property to null.
 
+        public static Shader GetShader(string name)
+        {
+            var shaderes = Resources.FindObjectsOfTypeAll<Shader>();
+            Shader shader = shaderes.FirstOrDefault(x => x.name == name);
+            return shader;
         }
-        #endregion
 
         private void OnConfigChanged()
         {
