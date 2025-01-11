@@ -1,14 +1,29 @@
 ﻿using AudioVisualizer.Configuration;
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.GameplaySetup;
+using BeatSaberMarkupLanguage.ViewControllers;
+using BeatSaberMarkupLanguage.Parser;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Zenject;
 
 namespace AudioVisualizer.Views
 {
-    internal class SettingViewController : PersistentSingleton<SettingViewController>, INotifyPropertyChanged
+    [HotReload]
+    internal class SettingViewController : BSMLAutomaticViewController, IInitializable, INotifyPropertyChanged
     {
+
+        public static SettingViewController Instance { get; }
+
+        [UIParams]
+        BSMLParserParams parserParams;
+
+        public void updateUI()
+        {
+            parserParams.EmitEvent("cancel");
+        }
+
         /// <summary>メニュー内で表示するかどうか を取得、設定</summary>
         private bool _showMenu;
         [UIValue("show-menu")]
@@ -65,16 +80,22 @@ namespace AudioVisualizer.Views
             this.PropertyChanged?.Invoke(this, args);
         }
 
-        public void Setup()
+        public void TabSetup()
         {
-            GameplaySetup.instance?.RemoveTab(s_tabName);
-            GameplaySetup.instance?.AddTab(s_tabName, s_resourceName, this);
+            GameplaySetup.Instance?.RemoveTab(s_tabName);
+            GameplaySetup.Instance?.AddTab(s_tabName, s_resourceName, this);
         }
 
         protected override void OnDestroy()
         {
+            GameplaySetup.Instance?.RemoveTab(s_tabName);
             base.OnDestroy();
-            GameplaySetup.instance?.RemoveTab(s_tabName);
         }
+
+        public void Initialize()
+        {
+            this.TabSetup();
+        }
+
     }
 }

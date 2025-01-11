@@ -9,6 +9,8 @@ namespace AudioVisualizer
 {
     internal class AudioTimeSyncControllerEx : AudioTimeSyncController
     {
+        private AudioSource _audioSource;
+
         public AudioSource GetAudioSource()
         {
             return _audioSource;
